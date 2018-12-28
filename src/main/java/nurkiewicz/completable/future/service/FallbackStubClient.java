@@ -1,0 +1,54 @@
+package nurkiewicz.completable.future.service;
+
+import org.jsoup.nodes.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import nurkiewicz.completable.future.common.IStackOverflowClient;
+
+/**
+ * 
+ * @author Administrador
+ *
+ */
+public class FallbackStubClient implements IStackOverflowClient {
+
+	private final IStackOverflowClient target;
+	private static final Logger loG = LoggerFactory.getLogger(FallbackStubClient.class);
+
+	public FallbackStubClient(IStackOverflowClient target) {
+		// TODO Auto-generated constructor stub
+		this.target = target;
+	}
+
+	@Override
+	public String mostOfRecentQuestionAboutTopic(String tag) {
+		// TODO Auto-generated method stub
+		try {
+			return this.target.mostOfRecentQuestionAboutTopic(tag);
+		} catch (Exception e) {
+			loG.warn("Problem retrieving tag {}", tag, e);
+			//
+			switch (tag) {
+			case "java":
+				return "How to generate xml report with maven dependency?";
+			case "scala":
+				return "Update a timestamp SettingKey in an sbt 0.12 task";
+			case "groovy":
+				return "Reusing Grils variables inside Config.groovy";
+			case "clojure":
+				return "Merge two comma delimited string in Cloujure";
+			default:
+				throw e;
+
+			}
+		}
+	}
+
+	@Override
+	public Document mostOfRecentQuestionsAboutTopic(String tag) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}
