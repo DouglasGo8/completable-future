@@ -1,8 +1,15 @@
 package nurkiewicz.completable.future.service;
 
+import java.io.IOException;
+import java.net.URL;
+
+import org.apache.commons.io.IOUtils;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Throwables;
 
 import nurkiewicz.completable.future.common.IStackOverflowClient;
 
@@ -48,7 +55,22 @@ public class FallbackStubClient implements IStackOverflowClient {
 	@Override
 	public Document mostOfRecentQuestionsAboutTopic(String tag) {
 		// TODO Auto-generated method stub
-		return null;
+		try {
+			return this.target.mostOfRecentQuestionsAboutTopic(tag);
+		} catch (Exception e) {
+			loG.warn("Problem retrieving recent question {}", tag, e);
+			return loadStubHtmlFromDisk(tag);
+		}
+	}
+
+	private Document loadStubHtmlFromDisk(String tag) {
+		try {
+			final URL resource = getClass().getResource("/" + tag + "-questions.html");
+			final String html = IOUtils.toString(resource);
+			return Jsoup.parse(html);
+		} catch (IOException e) {
+			throw Throwables.propagate(e);
+		}
 	}
 
 }

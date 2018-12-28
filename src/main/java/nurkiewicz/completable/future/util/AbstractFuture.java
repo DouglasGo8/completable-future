@@ -39,7 +39,7 @@ public abstract class AbstractFuture {
 	/**
 	 * 
 	 */
-	protected final ExecutorService executor = Executors.newFixedThreadPool(10, threadFactory("custom-thread_"));
+	protected final ExecutorService executor = Executors.newFixedThreadPool(10, threadFactory("WorkerThread_"));
 
 	/**
 	 * 
@@ -61,6 +61,10 @@ public abstract class AbstractFuture {
 		return new ThreadFactoryBuilder().setNameFormat(nameFormat.concat("-%d")).build();
 	}
 
+	
+	/**
+	 * 
+	 */
 	@Before
 	public void logTestStart() {
 		loG.debug("Starting: {}", tName.getMethodName());

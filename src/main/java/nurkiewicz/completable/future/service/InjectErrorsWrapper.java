@@ -38,7 +38,8 @@ public class InjectErrorsWrapper implements IStackOverflowClient {
 	@Override
 	public Document mostOfRecentQuestionsAboutTopic(String tag) {
 		// TODO Auto-generated method stub
-		return null;
+		this.throwsIfBlackListed(tag);
+		return this.target.mostOfRecentQuestionsAboutTopic(tag);
 	}
 
 	/**

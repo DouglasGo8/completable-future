@@ -39,7 +39,11 @@ public class ArtificialSleepWrapper implements IStackOverflowClient {
 	@Override
 	public Document mostOfRecentQuestionsAboutTopic(String tag) {
 		// TODO Auto-generated method stub
-		return null;
+		artificialSleep(1000);
+		final long start = System.currentTimeMillis();
+		final Document result = this.target.mostOfRecentQuestionsAboutTopic(tag);
+		artificialSleep(1000 - (System.currentTimeMillis() - start));
+		return result;
 	}
 
 	protected static void artificialSleep(long expected) {
