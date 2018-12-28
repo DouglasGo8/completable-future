@@ -171,9 +171,75 @@ public class EntryPoint extends AbstractFuture {
 		
 		this.sleepMe(5);
 	}
+	
+	@Test
+	@Ignore
+	public void step_04_thenAcceptIsPoor() {
+		this.java.thenAccept(doc -> {
+			this.findMostInterestingQuestion(doc).thenAccept(question -> {
+				this.googleAnswer(question).thenAccept(answer  -> {
+					this.postAnswer(answer ).thenAccept(status -> {
+						if (status == 200) {
+							loG.debug("OK");
+						} else {
+							loG.error("Wrong status code {}", status);
+						}
+					});
+				});
+			});
+		});
+		
+		this.sleepMe(5);
+	}
 
+	@Test
+	@Ignore
+	public void step_04_thenCompose() {
+		
+		this.java
+			.thenCompose(doc -> this.findMostInterestingQuestion(doc))
+			.thenCompose(question -> this.googleAnswer(question))
+			.thenCompose(answer -> this.postAnswer(answer))
+			.thenAccept(status -> {
+				if (status == 200) {
+					loG.debug("Ok");
+				} else {
+					loG.error("Wrong status code {}", status);
+				}
+			});
+		
+		this.sleepMe(6);
+		
+	}
+	
+	@Test
+	public void step_04_chainedShort() {
+		this.java
+			.thenCompose(this::findMostInterestingQuestion)
+			.thenCompose(this::googleAnswer)
+			.thenCompose(this::postAnswer)
+			.thenAccept(status -> {
+				if (status == 200) {
+					loG.debug("Ok");
+				} else {
+					loG.error("Wrong status code {}", status);
+				}
+			});
+	
+		this.sleepMe(10);
+	}
+	
 	private CompletableFuture<Question> findMostInterestingQuestion(Document document) {
 		return CompletableFuture.completedFuture(new Question());
+	}
+	
+	
+	private CompletableFuture<String> googleAnswer(Question q) {
+		return CompletableFuture.completedFuture("42");
+	}
+	
+	private CompletableFuture<Integer> postAnswer(String answer) {
+		return CompletableFuture.completedFuture(200);
 	}
 	
 	/**
@@ -189,5 +255,5 @@ public class EntryPoint extends AbstractFuture {
 			e.printStackTrace();
 		}
 	}
-	
+
 }
