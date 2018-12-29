@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
+import org.jsoup.nodes.Document;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
@@ -41,7 +42,9 @@ public abstract class AbstractFuture {
 	 * 
 	 */
 	protected final ExecutorService executor = Executors.newFixedThreadPool(10, threadFactory("WorkerThread_"));
-
+	protected final ExecutorService poolAlpha = Executors.newFixedThreadPool(10, threadFactory("Alpha"));
+	protected final ExecutorService poolBeta = Executors.newFixedThreadPool(10, threadFactory("Beta"));
+	protected final ExecutorService poolGamma = Executors.newFixedThreadPool(10, threadFactory("Gamma"));
 	/**
 	 * 
 	 */
@@ -62,11 +65,24 @@ public abstract class AbstractFuture {
 		return new ThreadFactoryBuilder().setNameFormat(nameFormat.concat("-%d")).build();
 	}
 	
-	
+	/**
+	 * 
+	 * @param tag
+	 * @return
+	 */
 	protected CompletableFuture<String> questions(String tag) {
 		return CompletableFuture.<String>supplyAsync(() -> this.svcStackoverflow.mostOfRecentQuestionAboutTopic(tag));
 	}
 	
+	/**
+	 * 
+	 * @param tag
+	 * @return
+	 */
+	protected CompletableFuture<Document> questionsByDoc(String tag) {
+		return CompletableFuture
+				.<Document>supplyAsync(() -> this.svcStackoverflow.mostOfRecentQuestionsAboutTopic(tag));
+	}
 	/**
 	 * 
 	 */

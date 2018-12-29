@@ -34,14 +34,6 @@ public class EntryPoint extends AbstractFuture {
 	 */
 	private Logger loG = LoggerFactory.getLogger(EntryPoint.class);
 
-	/**
-	 * 
-	 */
-	private CompletableFuture<Document> java_doc = CompletableFuture
-			.<Document>supplyAsync(() -> 
-				super.svcStackoverflow.mostOfRecentQuestionsAboutTopic(tag), 
-				super.executor);
-
 	@Test
 	@Ignore
 	public void step_01_Introduction() {
@@ -95,7 +87,7 @@ public class EntryPoint extends AbstractFuture {
 
 		try {
 
-			loG.debug("Found: '{}'", this.java_doc.get()); // Future.get() equivalent blocks
+			loG.debug("Found: '{}'", super.questions(tag).get()); // Future.get() equivalent blocks
 
 			// loG.debug("Sometimes first");
 
@@ -110,7 +102,7 @@ public class EntryPoint extends AbstractFuture {
 	public void step_02_supplyAsyncWithCustomExecutor() {
 		try {
 			
-			loG.debug("Found: '{}'", this.java_doc.get()); // blocks
+			loG.debug("Found: '{}'", super.questions(tag).get()); // blocks
 			// loG.debug("Sometimes get first");
 
 		} catch (InterruptedException | ExecutionException e) {
@@ -123,21 +115,15 @@ public class EntryPoint extends AbstractFuture {
 	@Ignore
 	public void step_03_oldSchool() {
 
-		try {
+		final Document doc = super.svcStackoverflow.mostOfRecentQuestionsAboutTopic(tag);
+		
+		loG.debug("Hi there");
 
-			final Document doc = this.java_doc.get(); // blocks
-			loG.debug("Hi there");
+		final Element element = doc.select("a.question-hyperlink").get(0);
+		final String title = element.text();
+		final int length = title.length();
 
-			final Element element = doc.select("a.question-hyperlink").get(0);
-			final String title = element.text();
-			final int length = title.length();
-
-			loG.debug("Length: {}", length);
-
-		} catch (InterruptedException | ExecutionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		loG.debug("Length: {}", length);
 
 	}
 
@@ -145,7 +131,7 @@ public class EntryPoint extends AbstractFuture {
 	@Ignore
 	public void step_03_callbacksCallbacksEverywhere() {
 
-		this.java_doc.thenAccept(doc -> loG.debug("Downloaded: {}", doc)); // non-blocking
+		super.questions(tag).thenAccept(doc -> loG.debug("Downloaded: {}", doc)); // non-blocking
 
 		this.sleepMe(5);
 	}
@@ -154,7 +140,7 @@ public class EntryPoint extends AbstractFuture {
 	@Ignore
 	public void step_03_thenApply() {
 
-		this.java_doc
+		super.questionsByDoc(tag)
 			.thenApply((Document doc) -> doc.select("a.question-hyperlink").get(0)) // works like Map in Stream
 			.thenApply(Element::text) // Works like Map in Stream
 			.thenApply(String::length) // Works like Map in Stream
@@ -167,7 +153,8 @@ public class EntryPoint extends AbstractFuture {
 	@Ignore
 	public void step_04_thenApplyIsWrong() {
 		
-		this.java_doc.thenApply(doc -> findMostInterestingQuestion(doc));
+		super.questionsByDoc(tag)
+			.thenApply(doc -> findMostInterestingQuestion(doc));
 		
 		
 		this.sleepMe(5);
@@ -176,7 +163,7 @@ public class EntryPoint extends AbstractFuture {
 	@Test
 	@Ignore
 	public void step_04_thenAcceptIsPoor() {
-		this.java_doc.thenAccept(doc -> {
+		super.questionsByDoc(tag).thenAccept(doc -> {
 			this.findMostInterestingQuestion(doc).thenAccept(question -> {
 				this.googleAnswer(question).thenAccept(answer  -> {
 					this.postAnswer(answer ).thenAccept(status -> {
@@ -197,7 +184,7 @@ public class EntryPoint extends AbstractFuture {
 	@Ignore
 	public void step_04_thenCompose() {
 		
-		this.java_doc
+		super.questionsByDoc(tag)
 			.thenCompose(doc -> this.findMostInterestingQuestion(doc))
 			.thenCompose(question -> this.googleAnswer(question))
 			.thenCompose(answer -> this.postAnswer(answer))
@@ -216,7 +203,7 @@ public class EntryPoint extends AbstractFuture {
 	@Test
 	@Ignore
 	public void step_04_chainedComposeShort() {
-		this.java_doc
+		super.questionsByDoc(tag)
 			.thenCompose(this::findMostInterestingQuestion)
 			.thenCompose(this::googleAnswer)
 			.thenCompose(this::postAnswer)
@@ -304,6 +291,77 @@ public class EntryPoint extends AbstractFuture {
 		this.sleepMe(10);
 		
 	}
+	
+	
+	@Test 
+	@Ignore
+	public void step_07_AsyncCallback () throws Exception {
+		
+		final CompletableFuture<String> java = CompletableFuture
+				.<String>supplyAsync(() -> 
+					super.svcStackoverflow.mostOfRecentQuestionAboutTopic("java"), 
+					super.poolAlpha);
+		
+		final CompletableFuture<String> scala = CompletableFuture
+				.<String>supplyAsync(() -> 
+					super.svcStackoverflow.mostOfRecentQuestionAboutTopic("scala"), 
+					super.poolBeta);
+		
+		final CompletableFuture<String> first = java.applyToEither(scala, question -> {
+			this.loG.debug("First: {}", question);
+			return question.toUpperCase();
+		});
+		
+		first.thenAccept(q-> loG.debug("Sync: {}", q));
+		first.thenAcceptAsync(q-> loG.debug("Async: {}", q));
+		first.thenAcceptAsync(q-> loG.debug("Async (pool): {}", q), super.poolGamma);
+		
+		first.get(); // block
+	
+	}
+	
+	
+	@Test
+	@Ignore
+	public void step_08_exceptionsShortCircuitFuture() throws Exception {
+		
+		super.questions("php")
+			.thenApply(r-> {
+				this.loG.debug("Success!");
+				return r;
+			}).get();
+		
+		
+	}
+	
+	
+	@Test
+	@Ignore
+	public void step_08_handleExceptions() throws Exception {
+
+		CompletableFuture<String> questions = super.questions("php")
+				.handle((result, throwable) -> {
+					if (throwable != null) {
+						return "No PHP today due to: " + throwable;
+					} else {
+						return result.toUpperCase();
+					}
+				});
+		
+		loG.debug("Handled: {}", questions.get());
+	}
+	
+	
+	@Test
+	@Ignore
+	public void step_08_shouldHandleExceptionally() throws Exception {
+
+		CompletableFuture<String> questions = super.questions("php")
+				.exceptionally(throwable -> "Sorry, try again later!");
+		
+		loG.debug("Handled: {}", questions.get());
+	}
+	
 	
 	
 	

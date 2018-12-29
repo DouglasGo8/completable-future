@@ -50,7 +50,7 @@ public class InjectErrorsWrapper implements IStackOverflowClient {
 		if (this.blackList.contains(tag)) {
 			ArtificialSleepWrapper.artificialSleep(400l);
 			loG.warn("About to throw artificial exception due to: {}", tag);
-			throw new IllegalArgumentException("Unsupported " + tag);
+			throw new IllegalArgumentException("Got fail -> Unsupported " + tag);
 		}
 	}
 }

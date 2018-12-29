@@ -36,7 +36,7 @@ public class FallbackStubClient implements IStackOverflowClient {
 		} catch (Exception e) {
 			loG.warn("Problem retrieving tag {}", tag, e);
 			//
-			switch (tag) {
+			switch (tag.toLowerCase()) {
 			case "java":
 				return "How to generate xml report with maven dependency?";
 			case "scala":
