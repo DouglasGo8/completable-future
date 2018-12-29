@@ -37,7 +37,7 @@ public class EntryPoint extends AbstractFuture {
 	/**
 	 * 
 	 */
-	private CompletableFuture<Document> java = CompletableFuture
+	private CompletableFuture<Document> java_doc = CompletableFuture
 			.<Document>supplyAsync(() -> 
 				super.svcStackoverflow.mostOfRecentQuestionsAboutTopic(tag), 
 				super.executor);
@@ -95,7 +95,7 @@ public class EntryPoint extends AbstractFuture {
 
 		try {
 
-			loG.debug("Found: '{}'", this.java.get()); // Future.get() equivalent blocks
+			loG.debug("Found: '{}'", this.java_doc.get()); // Future.get() equivalent blocks
 
 			// loG.debug("Sometimes first");
 
@@ -109,7 +109,8 @@ public class EntryPoint extends AbstractFuture {
 	@Ignore
 	public void step_02_supplyAsyncWithCustomExecutor() {
 		try {
-			loG.debug("Found: '{}'", this.java.get()); // blocks
+			
+			loG.debug("Found: '{}'", this.java_doc.get()); // blocks
 			// loG.debug("Sometimes get first");
 
 		} catch (InterruptedException | ExecutionException e) {
@@ -124,7 +125,7 @@ public class EntryPoint extends AbstractFuture {
 
 		try {
 
-			final Document doc = this.java.get(); // blocks
+			final Document doc = this.java_doc.get(); // blocks
 			loG.debug("Hi there");
 
 			final Element element = doc.select("a.question-hyperlink").get(0);
@@ -144,7 +145,7 @@ public class EntryPoint extends AbstractFuture {
 	@Ignore
 	public void step_03_callbacksCallbacksEverywhere() {
 
-		this.java.thenAccept(doc -> loG.debug("Downloaded: {}", doc)); // non-blocking
+		this.java_doc.thenAccept(doc -> loG.debug("Downloaded: {}", doc)); // non-blocking
 
 		this.sleepMe(5);
 	}
@@ -153,7 +154,7 @@ public class EntryPoint extends AbstractFuture {
 	@Ignore
 	public void step_03_thenApply() {
 
-		this.java
+		this.java_doc
 			.thenApply((Document doc) -> doc.select("a.question-hyperlink").get(0)) // works like Map in Stream
 			.thenApply(Element::text) // Works like Map in Stream
 			.thenApply(String::length) // Works like Map in Stream
@@ -166,7 +167,7 @@ public class EntryPoint extends AbstractFuture {
 	@Ignore
 	public void step_04_thenApplyIsWrong() {
 		
-		this.java.thenApply(doc -> findMostInterestingQuestion(doc));
+		this.java_doc.thenApply(doc -> findMostInterestingQuestion(doc));
 		
 		
 		this.sleepMe(5);
@@ -175,7 +176,7 @@ public class EntryPoint extends AbstractFuture {
 	@Test
 	@Ignore
 	public void step_04_thenAcceptIsPoor() {
-		this.java.thenAccept(doc -> {
+		this.java_doc.thenAccept(doc -> {
 			this.findMostInterestingQuestion(doc).thenAccept(question -> {
 				this.googleAnswer(question).thenAccept(answer  -> {
 					this.postAnswer(answer ).thenAccept(status -> {
@@ -196,7 +197,7 @@ public class EntryPoint extends AbstractFuture {
 	@Ignore
 	public void step_04_thenCompose() {
 		
-		this.java
+		this.java_doc
 			.thenCompose(doc -> this.findMostInterestingQuestion(doc))
 			.thenCompose(question -> this.googleAnswer(question))
 			.thenCompose(answer -> this.postAnswer(answer))
@@ -213,8 +214,9 @@ public class EntryPoint extends AbstractFuture {
 	}
 	
 	@Test
-	public void step_04_chainedShort() {
-		this.java
+	@Ignore
+	public void step_04_chainedComposeShort() {
+		this.java_doc
 			.thenCompose(this::findMostInterestingQuestion)
 			.thenCompose(this::googleAnswer)
 			.thenCompose(this::postAnswer)
@@ -228,6 +230,82 @@ public class EntryPoint extends AbstractFuture {
 	
 		this.sleepMe(10);
 	}
+	
+	@Test
+	@Ignore
+	public void step_05_thenCombide() {
+		
+		final CompletableFuture<String> java = super.questions("java");
+		final CompletableFuture<String> python = super.questions("python");
+		
+		final CompletableFuture<Integer> both = java.thenCombine(python, (t1, t2) -> t1.length() + t2.length());
+		
+		both.thenAccept(length -> loG.debug("Total Length: {}", length));
+		
+		this.sleepMe(10);
+	}
+	
+	@Test
+	@Ignore
+	public void step_05_either() {
+		
+		final CompletableFuture<String> java = super.questions("java");
+		final CompletableFuture<String> python = super.questions("python");
+
+		final CompletableFuture<String> both = java.applyToEither(python, title -> title.toUpperCase());
+		
+		both.thenAccept(title -> loG.debug("First: {}", title));
+		
+		
+		this.sleepMe(10);
+	}
+	
+	@Test
+	@Ignore
+	public void step_06_allOf() {
+		
+		final CompletableFuture<String> java = super.questions("java");
+		final CompletableFuture<String> python = super.questions("python");
+		final CompletableFuture<String> groovy = super.questions("groovy");
+		final CompletableFuture<String> clojure = super.questions("clojure");
+
+		final CompletableFuture<Void> allCompleted = 
+			CompletableFuture.allOf(java, python, groovy, clojure);
+		
+		allCompleted.thenRun(() -> { // Non-blocking
+			try {
+				loG.debug("Loaded: {}", java.get());
+				loG.debug("Loaded: {}", python.get());
+				loG.debug("Loaded: {}", groovy.get());
+				loG.debug("Loaded: {}", clojure.get());
+			} catch (InterruptedException | ExecutionException e) {
+				loG.error("", e);
+			}
+		});		
+		
+		this.sleepMe(10);
+		
+	}
+	
+	@Test
+	@Ignore
+	public void step_06_anyOf() {
+		
+		final CompletableFuture<String> java = super.questions("java");
+		final CompletableFuture<String> python = super.questions("python");
+		final CompletableFuture<String> groovy = super.questions("groovy");
+		final CompletableFuture<String> clojure = super.questions("clojure");
+
+		final CompletableFuture<Object> anyOf = 
+			CompletableFuture.anyOf(java, python, groovy, clojure);
+		
+		anyOf.thenAccept(result -> loG.debug("First: {}", result));
+		
+		this.sleepMe(10);
+		
+	}
+	
+	
 	
 	private CompletableFuture<Question> findMostInterestingQuestion(Document document) {
 		return CompletableFuture.completedFuture(new Question());

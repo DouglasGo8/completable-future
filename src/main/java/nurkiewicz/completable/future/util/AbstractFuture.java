@@ -1,5 +1,6 @@
 package nurkiewicz.completable.future.util;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -60,7 +61,11 @@ public abstract class AbstractFuture {
 	protected ThreadFactory threadFactory(String nameFormat) {
 		return new ThreadFactoryBuilder().setNameFormat(nameFormat.concat("-%d")).build();
 	}
-
+	
+	
+	protected CompletableFuture<String> questions(String tag) {
+		return CompletableFuture.<String>supplyAsync(() -> this.svcStackoverflow.mostOfRecentQuestionAboutTopic(tag));
+	}
 	
 	/**
 	 * 
